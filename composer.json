@@ -1,0 +1,21 @@
+{
+    "name": "xou816/silex-autowiring",
+    "type": "library",
+    "homepage": "https://github.com/xou816/silex-autowiring",
+    "description": "A service to autowire your services in Silex.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alexandre Trendel",
+            "email": "trendel.alexandre@gmail.com"
+        }
+    ],
+    "keywords" : ["Silex", "Services", "Injection"],
+    "require": {
+        "php": ">=5.5",
+        "silex/silex": "v2.*"
+    },
+    "autoload": {
+        "psr-0": { "SilexAutowiring": "src/" }
+    }
+}
