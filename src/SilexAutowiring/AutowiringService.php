@@ -24,27 +24,25 @@ class AutowiringService {
 		return $this->name($classname);
 	}
 
-	private function deps($classname) {
-		if (!method_exists($classname, '__construct')) {
-			return array();
-		} else {
-			$ref = new \ReflectionMethod($classname, '__construct');
-			$deps = $ref->getParameters();
-			$deps = array_map(function($dep) {
-				return $this->name($dep->getClass()->name, $dep->getName());
-			}, $deps);
-			return $deps;
-		}
+	private function mapParameters(\ReflectionFunctionAbstract $fun, $args) {
+		return array_map(function($param) use ($args) {
+			$class = $param->getClass();
+			if (is_null($class)) {
+				return array_shift($args);
+			} else {
+				return $this->app[$this->name($class->name, $param->getName())];
+			}
+		}, $fun->getParameters());
 	}
 
-	public function wire($classname) {
-		$deps = $this->deps($classname);
-		return $this->register($classname, function($app) use ($classname, $deps) {
-			$deps = array_map(function($dep) use ($app) {
-				return $app[$dep];
-			}, $deps);
-			$reflect = new \ReflectionClass($classname);
-			return $reflect->newInstanceArgs($deps);
+	public function wire($classname, $args = []) {
+		if (method_exists($classname, '__construct')) {
+			$ref = new \ReflectionMethod($classname, '__construct');
+			$args = $this->mapParameters($ref, $args);
+		}
+		return $this->register($classname, function($app) use ($classname, $args) {
+			$class = new \ReflectionClass($classname);
+			return $class->newInstanceArgs($args);
 		});
 	}
 
@@ -76,16 +74,9 @@ class AutowiringService {
 		return $this->app[$this->name($classname)];
 	}
 
-	public function invoke($anonymous, $args) {
+	public function invoke($anonymous, $args = []) {
 		$ref = new \ReflectionFunction($anonymous);
-		$args = array_map(function($param) use ($args) {
-			$class = $param->getClass();
-			if (is_null($class)) {
-				return array_shift($args);
-			} else {
-				return $this->app[$this->name($class->name, $param->getName())];
-			}
-		}, $ref->getParameters());
+		$args = $this->mapParameters($ref, $args);
 		return $ref->invokeArgs($args);
 	}
 
