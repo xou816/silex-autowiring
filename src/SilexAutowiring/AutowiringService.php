@@ -24,13 +24,13 @@ class AutowiringService {
 		return $this->name($classname);
 	}
 
-	private function mapParameters(\ReflectionFunctionAbstract $fun, $args) {
-		return array_map(function($param) use ($args) {
+	private function mapParameters(Application $app, \ReflectionFunctionAbstract $fun, $args) {
+		return array_map(function($param) use ($app, $args) {
 			$class = $param->getClass();
 			if (is_null($class)) {
 				return array_shift($args);
 			} else {
-				return $this->app[$this->name($class->name, $param->getName())];
+				return $app[$this->name($class->name, $param->getName())];
 			}
 		}, $fun->getParameters());
 	}
@@ -38,12 +38,17 @@ class AutowiringService {
 	public function wire($classname, $args = []) {
 		if (method_exists($classname, '__construct')) {
 			$ref = new \ReflectionMethod($classname, '__construct');
-			$args = $this->mapParameters($ref, $args);
+			return $this->register($classname, function($app) use ($classname, $ref, $args) {
+				$args = $this->mapParameters($app, $ref, $args);
+				$class = new \ReflectionClass($classname);
+				return $class->newInstanceArgs($args);
+			});
+		} else {
+			return $this->register($classname, function($app) use ($classname) {
+				$class = new \ReflectionClass($classname);
+				return $class->newInstance();
+			});
 		}
-		return $this->register($classname, function($app) use ($classname, $args) {
-			$class = new \ReflectionClass($classname);
-			return $class->newInstanceArgs($args);
-		});
 	}
 
 	public function provide($service_name) {
@@ -76,7 +81,7 @@ class AutowiringService {
 
 	public function invoke($anonymous, $args = []) {
 		$ref = new \ReflectionFunction($anonymous);
-		$args = $this->mapParameters($ref, $args);
+		$args = $this->mapParameters($this->app, $ref, $args);
 		return $ref->invokeArgs($args);
 	}
 
