@@ -62,9 +62,11 @@ class AutowiringService {
 		if ($classname == Injectable::class) {
 			$converted = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $paramname));
 			$hash = sha1($converted);
-			$this->app[$hash] = function($app) use ($converted) {
-				return new Injectable($app[$converted]);
-			};
+			if (!isset($this->app[$hash])) {
+				$this->app[$hash] = function($app) use ($converted) {
+					return new Injectable($app[$converted]);
+				};
+			}
 			return $hash;
 		} else {
 			return sha1(str_replace('\\', '.', $classname));
