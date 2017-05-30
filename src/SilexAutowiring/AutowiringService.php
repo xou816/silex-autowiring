@@ -76,4 +76,17 @@ class AutowiringService {
 		return $this->app[$this->name($classname)];
 	}
 
+	public function invoke($anonymous, $args) {
+		$ref = new \ReflectionFunction($anonymous);
+		$args = array_map(function($param) use ($args) {
+			$class = $param->getClass();
+			if (is_null($class)) {
+				return array_shift($args);
+			} else {
+				return $this->app[$this->name($class->name, $param->getName())];
+			}
+		}, $ref->getParameters());
+		return $ref->invokeArgs($args);
+	}
+
 }

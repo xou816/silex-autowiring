@@ -37,11 +37,11 @@ Call the `wire` method to let the autowiring service create your instances.
 ```php
 class Foo {}
 class Bar {
-	public function __construct(Foo $foo) {
-    	$this->foo = $foo;
+    public function __construct(Foo $foo) {
+        $this->foo = $foo;
     }
     public function greet() {
-    	return 'Hello!';
+        return 'Hello!';
     }
 }
 $app['autowiring']->wire(Foo::class);
@@ -73,7 +73,7 @@ $app['autowiring']->provide('db');
 // ...
 
 class DAO {
-	public function __construct(\Doctrine\DBAL\Connection $db) { /**/ }
+    public function __construct(\Doctrine\DBAL\Connection $db) { /**/ }
 }
 $app['autowiring']->wire(DAO::class); // will work just fine!
 ```
@@ -88,8 +88,8 @@ In order to do that, add a dependency to `SilexAutowiring\Injectable`:
 $app['foo_options'] = array('bar' => true);
 
 class Foo {
-	public __construct(Injectable $fooOptions) {
-    	$this->bar = $fooOptions->get()['bar']; // true
+    public __construct(Injectable $fooOptions) {
+        $this->bar = $fooOptions->get()['bar']; // true
     }
 }
 $app['autowiring']->wire(Foo::class);
@@ -103,19 +103,19 @@ The autowiring service can also inject services based on interface rather than c
 
 ```php
 interface GreeterInterface {
-	public function greet();
+    public function greet();
 }
 
 class PoliteGreeter implements GreeterInterface {
-	public function greet() {
-    	return 'Hello!';
+    public function greet() {
+        return 'Hello!';
     }
 }
 $app['autowiring']->wire(PoliteGreeter::class);
 
 class RudeGreeter implements GreeterInterface {
-	public function greet() {
-    	return '...';
+    public function greet() {
+        return '...';
     }
 }
 $app['autowiring']->wire(RudeGreeter::class);
