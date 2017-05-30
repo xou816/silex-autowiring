@@ -10,12 +10,12 @@ Features
 Requirements
 ------------
 
- (to be determined)
+(to be determined)
 
 Installation
 ------------
 
-Through [Composer](http://getcomposer.org): `composer require xou816/silex-autowiring`.
+Through [Composer](https://packagist.org/packages/xou816/silex-autowiring): `composer require xou816/silex-autowiring`.
 
 ```php
 use SilexAutowiring\AutowiringServiceProvider;
@@ -52,6 +52,32 @@ The resulting instance of `Bar` can be found using `$app['autowiring']->provider
 
 **Every dependency of `Bar` has to be wired!**
 
+You can pass an array of arguments to `wire` : these arguments will be passed in order wherever an argument could not be resolved to a service. For instance, the following two examples are equivalent:
+
+```php
+class Foo {}
+class Bar {
+    public function __construct(Foo $foo, $arg1, $arg2) {
+        $this->foo = $foo;
+        echo $arg1.' '.$arg2; // => 'hello world'
+    }
+}
+$app['autowiring']->wire(Foo::class);
+$app['autowiring']->wire(Bar::class, ['hello', 'world']);
+```
+
+```php
+class Foo {}
+class Bar {
+    public function __construct($arg1, Foo $foo, $arg2) {
+        $this->foo = $foo;
+        echo $arg1.' '.$arg2; // => 'hello world'
+    }
+}
+$app['autowiring']->wire(Foo::class);
+$app['autowiring']->wire(Bar::class, ['hello', 'world']);
+```
+
 ### Controller injection
 
 You can entirely avoid ever calling `provider` or `name`, as your wired services can be directly injected in controllers, alongside the usual `Request` or `Application` objects.
@@ -60,6 +86,17 @@ You can entirely avoid ever calling `provider` or `name`, as your wired services
 $app->get('/', function (Bar $bar) {
     return $bar->greet();
 });
+```
+
+### Closure injection
+
+You can also inject services in a closure, using `invoke`:
+
+```php
+$fun = function(Foo $foo, $arg) {
+    $foo->bar($arg);
+};
+$app['autowiring']->invoke($fun, ['bar']);
 ```
 
 ### Injecting built-in services
@@ -77,6 +114,8 @@ class DAO {
 }
 $app['autowiring']->wire(DAO::class); // will work just fine!
 ```
+
+The `AutowiringService` itself is provided, and can therefore be injected!
 
 ### Injecting any service
 
