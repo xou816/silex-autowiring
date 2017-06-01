@@ -7,7 +7,6 @@ use SilexAutowiring\Injectable;
 
 class AutowiringService {
 
-	private $registered = array();
 	private $app;
 
 	public function __construct(Application $app) {
@@ -15,10 +14,8 @@ class AutowiringService {
 	}
 
 	private function register($classname, $closure) {
-		$this->registered[] = $classname;
 		$this->app[$this->name($classname)] = $closure;
 		foreach (class_implements($classname) as $interface) {
-			$this->registered[] = $interface;
 			$this->app[$this->name($interface)] = $closure;
 		}
 		return $this->name($classname);
@@ -73,8 +70,8 @@ class AutowiringService {
 		}
 	}
 
-	public function isProvided($classname) {
-		return in_array($classname, $this->registered);
+	public function provides($classname) {
+		return isset($this->app[$this->name($classname)]);
 	}
 
 	public function provider($classname) {

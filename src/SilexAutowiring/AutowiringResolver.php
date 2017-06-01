@@ -16,7 +16,7 @@ class AutowiringResolver implements ArgumentValueResolverInterface {
 	}
 
 	public function supports(Request $request, ArgumentMetadata $argument) {
-		return $this->app['autowiring']->isProvided($argument->getType());
+		return $this->app['autowiring']->provides($argument->getType());
 	}
 
 	public function resolve(Request $request, ArgumentMetadata $argument) {
