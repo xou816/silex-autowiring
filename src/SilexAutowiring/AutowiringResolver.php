@@ -16,11 +16,11 @@ class AutowiringResolver implements ArgumentValueResolverInterface {
 	}
 
 	public function supports(Request $request, ArgumentMetadata $argument) {
-		return $this->app['autowiring']->provides($argument->getType());
+		return $this->app['autowiring']->provides($argument->getType(), $argument->getName());
 	}
 
 	public function resolve(Request $request, ArgumentMetadata $argument) {
-		yield $this->app['autowiring']->provider($argument->getType());
+		yield $this->app['autowiring']->provider($argument->getType(), $argument->getName());
 	}
 
 }

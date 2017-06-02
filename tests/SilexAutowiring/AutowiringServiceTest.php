@@ -76,8 +76,10 @@ class AutowiringServiceTest extends WebTestCase {
 	}
 
 	public function testServicesCanBeInjectedInControllers() {
+		$this->app['injectable_service'] = ['loaded' => true];
 		$this->app['autowiring']->wire(SimpleService::class);
-		$this->app->get('/', function(Request $req, SimpleService $service) {
+		$this->app->get('/', function(Request $req, SimpleService $service, Injectable $injectableService) {
+			$this->assertTrue($injectableService->get()['loaded']);
 			return $service->sayHello();
 		});
 		$client = $this->createClient();
@@ -110,8 +112,9 @@ class AutowiringServiceTest extends WebTestCase {
 	}
 
 	public function testServicesCanBeInjectedInClosures() {
+		$this->app['injectable_service'] = ['loaded' => true];
 		$this->app['autowiring']->wire(SimpleService::class);
-		$fun = function(SimpleService $service, $arg) {
+		$fun = function(SimpleService $service, Injectable $injectableService, $arg) {
 			return $service->sayHello().' '.$arg;
 		};
 		$res = $this->app['autowiring']->invoke($fun, ['Hello to you too!']);
