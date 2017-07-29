@@ -110,7 +110,7 @@ class AutowiringService {
 
 	public function provide($classname, $closure) {
 		return $this->register($classname, function($app) use ($closure) {
-			return $this->invoke($closure, $app);
+			return $this->invoke($closure, [$app]);
 		});
 	}
 

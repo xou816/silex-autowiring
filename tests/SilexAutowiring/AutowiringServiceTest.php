@@ -152,7 +152,7 @@ class AutowiringServiceTest extends WebTestCase {
 
 	public function testServicesCanBeProvidedWithACustomClosure() {
 		$this->auto()->wire(SimpleService::class);
-		$name = $this->auto()->provide(ServiceWithSingleDependency::class, function(SimpleService $s) {
+		$name = $this->auto()->provide(ServiceWithSingleDependency::class, function($app, SimpleService $s) {
 			return new ServiceWithSingleDependency($s);
 		});
 		$this->assertTrue($this->app[$name]->isAvailable());
