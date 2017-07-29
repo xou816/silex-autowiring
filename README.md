@@ -2,11 +2,6 @@
 
 A service to autowire your... services in [Silex](https://silex.sensiolabs.org/).
 
-Features
--------
-
-* Automatically inject dependencies in constructors and controllers
-
 Requirements
 ------------
 
@@ -29,6 +24,8 @@ The service is then available as ```$app['autowiring']```.
 
 Usage
 ------
+
+## Basics
 
 ### Constructor injection
 
@@ -69,7 +66,7 @@ $app['autowiring']->wire(Bar::class, ['hello', 'world']);
 ```php
 class Foo {}
 class Bar {
-    public function __construct($arg1, Foo $foo, $arg2) {
+    public function __construct($arg1, Foo $foo, $arg2) { // $args1 is now in first position
         $this->foo = $foo;
         echo $arg1.' '.$arg2; // => 'hello world'
     }
@@ -99,43 +96,6 @@ $fun = function(Foo $foo, $arg) {
 $app['autowiring']->invoke($fun, ['bar']);
 ```
 
-### Injecting built-in services
-
-If you wish to use a service shipped with Silex or a provider, you can use the `provide` method. For instance:
-
-```php
-$app->register(new DoctrineServiceProvider()); // registers a 'db' service
-$app['autowiring']->provide('db');
-
-// ...
-
-class DAO {
-    public function __construct(\Doctrine\DBAL\Connection $db) { /**/ }
-}
-$app['autowiring']->wire(DAO::class); // will work just fine!
-```
-
-The `AutowiringService` itself is provided, and can therefore be injected!
-
-### Injecting any service
-
-You may also inject any other service, even plain PHP objects (for which type hinting cannot be used) such as arrays or integers, as long as they are available in the Pimple container.
-
-In order to do that, add a dependency to `SilexAutowiring\Injectable`:
-
-```php
-$app['foo_options'] = array('bar' => true);
-
-class Foo {
-    public __construct(Injectable $fooOptions) {
-        $this->bar = $fooOptions->get()['bar']; // true
-    }
-}
-$app['autowiring']->wire(Foo::class);
-```
-The autowiring service knows how to inject the correct service as it infers the service's name from the constructor argument's name (`fooOptions` being converted from camel case to snake case).
-Since an instance of `Injectable` has to be passed to the constructor, you can retrieve the real service by calling `get`.
-
 ### Interfaces
 
 The autowiring service can also inject services based on interface rather than class. If multiple services implement the same interface, the last service to be wired is used.
@@ -163,3 +123,86 @@ $app->get('/', function(GreeterInterface $greeter) {
     return $greeter->greet(); // '...'
 });
 ```
+
+It is very useful to painlessly switch implementations of an interface.
+
+## Injecting other services
+
+### Exposing built-in services
+
+If you wish to use a service shipped with Silex or a provider, you can use the `expose` method. For instance:
+
+```php
+$app->register(new DoctrineServiceProvider()); // registers a 'db' service
+$app['autowiring']->expose('db');
+
+// ...
+
+class DAO {
+    public function __construct(\Doctrine\DBAL\Connection $db) { /**/ }
+}
+$app['autowiring']->wire(DAO::class); // will work just fine!
+```
+
+The `AutowiringService` itself is exposed, and can therefore be injected!
+
+When you need to register a service and expose it, you should instead use `provide`.
+
+```php
+$app['autowiring']->provide(Foo::class, function($app, Bar $bar) {
+    return new Foo($bar);
+});
+// Better than:
+// $app['whatever'] = function($app) { ... };
+// $app['autowiring']->expose('whatever');
+```
+
+### Injecting any service
+
+You may also inject any other service, even plain PHP objects (for which type hinting cannot be used) such as arrays or integers, as long as they are available in the Pimple container.
+
+In order to do that, add a dependency to a `SilexAutowiring\Injectable\Injectable`:
+
+```php
+$app['foo_options'] = array('bar' => true);
+$app['foo_options.baz'] = false;
+
+class Foo {
+    public __construct(Injectable $fooOptions) {
+        $this->bar = $fooOptions->get()['bar']; // true
+        $this->baz = $fooOptions->get()['baz']; // false
+    }
+}
+$app['autowiring']->wire(Foo::class);
+```
+The autowiring service knows how to inject the correct service as it infers the service's name from the constructor argument's name (`fooOptions` being converted from camel case to snake case).
+Since an instance of `Injectable` has to be passed to the constructor, you can retrieve the real service by calling `get`.
+
+### Property injection
+
+It is not possible to rely on type hinting to inject services on properties. Therefore, this feature is intended for configuration instead.
+
+```php
+$app['foo_options'] = array('bar' => true);
+$app['foo_options.baz'] = false;
+
+class Foo {
+    private $fooOptions;
+}
+$app['autowiring']->wire(Foo::class);
+$app['autowiring']->configure(Foo::class);
+```
+
+It resolves names much like with injectables, but injects plain values instead.
+
+### Injection resolver
+
+You might dislike the way `Injectable` and `configure` handle names (from snake case to camel case). It is possible to tweak this behaviour by providing (using `wire` for instance!) a custom implementation of `SilexAutowiring\Injectable\InjectableResolver`. This task is made easier by extending the `SilexAutowiring\Injectable\AbstractCompositeKeyResolver`, which allows handling identifiers such as 'foo_options.baz' above.
+
+You may also just `wire` the `SilexAutowiring\Injectable\IdentityResolver` class into your app to use a simpler resolution mechanism (no casing style alteration).
+
+## Experimental
+
+You may also use the `SilexAutowiring\Traits\Autowire` and `SilexAutowiring\Traits\Autoconfigure` instead of calling `wire` and `configure`.
+
+This is however not equivalent and likely much worse in terms of performance.

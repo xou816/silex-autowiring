@@ -3,11 +3,14 @@
 use Silex\Application;
 use Silex\WebTestCase;
 use SilexAutowiring\AutowiringServiceProvider;
-use SilexAutowiring\Injectable;
+use SilexAutowiring\Traits\Autowire;
+use SilexAutowiring\Traits\Autoconfigure;
+use SilexAutowiring\Injectable\Injectable;
+use SilexAutowiring\Injectable\IdentityResolver;
 use Symfony\Component\HttpFoundation\Request;
 
 class TestService {
-	public function isLoaded() {
+	public function isAvailable() {
 		return true;
 	}
 	public function sayHello() {
@@ -40,6 +43,20 @@ class ServiceWithInjectableDependency extends TestService {
 	}
 }
 
+class AutowiredService extends TestService {
+	use Autowire, Autoconfigure;
+	public $config;
+	public function __construct(SimpleService $dep) {}
+}
+
+class ServiceWithConfig extends TestService {
+	public $host;
+	public $port = '80';
+	public $root;
+	public $urls;
+	public $unset;
+}
+
 class AutowiringServiceTest extends WebTestCase {
 
 	public function setUp() {
@@ -54,71 +71,128 @@ class AutowiringServiceTest extends WebTestCase {
 		return $app;
 	}
 
+	private function auto() {
+		return $this->app['autowiring'];
+	}
+
 	public function testWiringPicksUpDependencies() {
-		$name = $this->app['autowiring']->wire(ServiceWithSingleDependency::class);
-		$this->app['autowiring']->wire(SimpleService::class);
-		$this->assertTrue($this->app[$name]->isLoaded());
+		$name = $this->auto()->wire(ServiceWithSingleDependency::class);
+		$this->auto()->wire(SimpleService::class);
+		$this->assertTrue($this->app[$name]->isAvailable());
 	}
 
 	public function testServiceCanBeFoundByClass() {
-		$this->app['autowiring']->wire(SimpleService::class);
-		$service = $this->app['autowiring']->provider(SimpleService::class);
-		$this->assertTrue($service->isLoaded());
+		$this->auto()->wire(SimpleService::class);
+		$service = $this->auto()->provider(SimpleService::class);
+		$this->assertTrue($service->isAvailable());
 	}
 
-	public function testAlreadyRegisteredServiceCanBeInjectedIfProvided() {
+	public function testAlreadyRegisteredServiceCanBeInjectedIfExposed() {
 		$this->app['simple_service'] = function($app) {
 			return new SimpleService();
 		};
-		$this->app['autowiring']->provide('simple_service');
-		$service = $this->app['autowiring']->provider(SimpleService::class);
-		$this->assertTrue($service->isLoaded());
+		$this->auto()->expose('simple_service');
+		$service = $this->auto()->provider(SimpleService::class);
+		$this->assertTrue($service->isAvailable());
+	}
+
+	public function testCustomProvidersCanBeWritten() {
+		$this->auto()->provide(SimpleService::class, function() {
+			return new SimpleService();
+		});
+		$service = $this->auto()->provider(SimpleService::class);
+		$this->assertTrue($service->isAvailable());
 	}
 
 	public function testServicesCanBeInjectedInControllers() {
-		$this->app['injectable_service'] = ['loaded' => true];
-		$this->app['autowiring']->wire(SimpleService::class);
-		$this->app->get('/', function(Request $req, SimpleService $service, Injectable $injectableService) {
-			$this->assertTrue($injectableService->get()['loaded']);
+		$this->app['injectable_service'] = ['available' => true];
+		$this->auto()->wire(SimpleService::class);
+		$this->app->get('/{arg}', function(Request $req, SimpleService $service, Injectable $injectableService, $arg) {
+			$this->assertTrue($injectableService->get()['available']);
 			return $service->sayHello();
 		});
 		$client = $this->createClient();
-		$client->request('GET', '/');
+		$client->request('GET', '/foo');
 		$this->assertTrue($client->getResponse()->isOk());
 		$this->assertEquals($client->getResponse()->getContent(), 'Hello world!');
 	}
 
 	public function testServicesCanBeInjectedByInterface() {
-		$this->app['autowiring']->wire(ServiceWithInterface::class);
-		$service = $this->app['autowiring']->provider(ServiceInterface::class);
-		$this->assertTrue($service->isLoaded());
+		$this->auto()->wire(ServiceWithInterface::class);
+		$service = $this->auto()->provider(ServiceInterface::class);
+		$this->assertTrue($service->isAvailable());
 	}
 
 	public function testPlainObjectsCanBeInjectedByTheirContainerName() {
-		$this->app['injectable_service'] = ['loaded' => true];
-		$this->app['autowiring']->wire(ServiceWithInjectableDependency::class);
-		$this->app['autowiring']->wire(SimpleService::class);
-		$service = $this->app['autowiring']->provider(ServiceWithInjectableDependency::class);
-		$this->assertTrue($service->isLoaded());
-		$this->assertTrue($service->injected['loaded']);
+		$this->app['injectable_service'] = ['available' => true];
+		$this->auto()->wire(ServiceWithInjectableDependency::class);
+		$this->auto()->wire(SimpleService::class);
+		$service = $this->auto()->provider(ServiceWithInjectableDependency::class);
+		$this->assertTrue($service->isAvailable());
+		$this->assertTrue($service->injected['available']);
 	}
 
 	public function testAdditionalArgumentsMayBeSuppliedToWire() {
-		$this->app['autowiring']->wire(SimpleService::class);
-		$this->app['autowiring']->wire(ServiceWithManuallyInjectedArgument::class, ['foo']);
-		$service = $this->app['autowiring']->provider(ServiceWithManuallyInjectedArgument::class);
-		$this->assertTrue($service->isLoaded());
+		$this->auto()->wire(SimpleService::class);
+		$this->auto()->wire(ServiceWithManuallyInjectedArgument::class, ['foo']);
+		$service = $this->auto()->provider(ServiceWithManuallyInjectedArgument::class);
+		$this->assertTrue($service->isAvailable());
 		$this->assertEquals($service->sayHello(), 'Hello foo!');
 	}
 
 	public function testServicesCanBeInjectedInClosures() {
-		$this->app['injectable_service'] = ['loaded' => true];
-		$this->app['autowiring']->wire(SimpleService::class);
+		$this->app['injectable_service'] = ['available' => true];
+		$this->auto()->wire(SimpleService::class);
 		$fun = function(SimpleService $service, Injectable $injectableService, $arg) {
 			return $service->sayHello().' '.$arg;
 		};
-		$res = $this->app['autowiring']->invoke($fun, ['Hello to you too!']);
+		$res = $this->auto()->invoke($fun, ['Hello to you too!']);
 		$this->assertEquals($res, 'Hello world! Hello to you too!');
+	}
+
+	public function testServicesCanBeProvidedWithACustomClosure() {
+		$this->auto()->wire(SimpleService::class);
+		$name = $this->auto()->provide(ServiceWithSingleDependency::class, function(SimpleService $s) {
+			return new ServiceWithSingleDependency($s);
+		});
+		$this->assertTrue($this->app[$name]->isAvailable());
+	}
+
+	public function testServicesCanBeWiredWithATrait() {
+		$this->app['config'] = ['key' => 'value'];
+		$this->auto()->wire(SimpleService::class);
+		$this->assertTrue($this->auto()->provider(AutowiredService::class)->isAvailable());
+		$this->assertEquals('value', $this->auto()->provider(AutowiredService::class)->config['key']);
+	}
+
+	public function testInjectableBehaviourCanBeTweaked() {
+		$this->auto()->wire(IdentityResolver::class);
+		$this->app['injectable_service'] = ['available' => true];
+		$fun = function(Injectable $injectable_service) {
+			return $injectable_service->get()['available'];
+		};
+		$res = $this->auto()->invoke($fun);
+		$this->assertEquals($res,  true);
+	}
+
+	public function testServicesCanBeConfiguredWithEase() {
+		$app = $this->app;
+		$app['host'] = 'localhost';
+		$app['port'] = '443';
+		$app['root'] = '/';
+		$app['urls.home'] = '/home';
+		$app['url.account'] = ['details' => 'ignore this!'];
+		$app['urls.account.details'] = '/account';
+		$app['urls.account.logout'] = '/logout';
+		$name = $this->auto()->wire(ServiceWithConfig::class);
+		$this->auto()->configure(ServiceWithConfig::class);
+		$service = $app[$name];
+		$this->assertEquals($service->host, 'localhost');
+		$this->assertEquals($service->port, '443');
+		$this->assertEquals($service->root, '/');
+		$this->assertEquals($service->urls['home'], '/home');
+		$this->assertEquals($service->urls['account']['details'], '/account');
+		$this->assertEquals($service->urls['account']['logout'], '/logout');
 	}
 
 }

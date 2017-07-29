@@ -17,7 +17,7 @@ class AutowiringServiceProvider implements ServiceProviderInterface, BootablePro
 
 	public function register(Container $app) {
 		$app['autowiring'] = new AutowiringService($app);
-		$app['autowiring']->provide('autowiring');
+		$app['autowiring']->expose('autowiring');
 	}
 
 	public function boot(Application $app) {

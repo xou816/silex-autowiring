@@ -3,7 +3,11 @@
 namespace SilexAutowiring;
 
 use Silex\Application;
-use SilexAutowiring\Injectable;
+use SilexAutowiring\Traits\Autowire;
+use SilexAutowiring\Traits\Autoconfigure;
+use SilexAutowiring\Injectable\Injectable;
+use SilexAutowiring\Injectable\InjectableResolver;
+use SilexAutowiring\Injectable\CasingShiftResolver;
 
 class AutowiringService {
 
@@ -11,6 +15,7 @@ class AutowiringService {
 
 	public function __construct(Application $app) {
 		$this->app = $app;
+		$this->wire(CasingShiftResolver::class);
 	}
 
 	private function register($classname, $closure) {
@@ -21,13 +26,22 @@ class AutowiringService {
 		return $this->name($classname);
 	}
 
+	private function hasTrait($classname, $trait) {
+		try {
+			$class = new \ReflectionClass($classname);
+			return !is_null($class) && in_array($trait, $class->getTraitNames());
+		} catch (\ReflectionException $e) {
+			return false;
+		}
+	}
+
 	private function mapParameters(Application $app, \ReflectionFunctionAbstract $fun, $args) {
 		return array_map(function($param) use ($app, $args) {
 			$class = $param->getClass();
 			if (is_null($class)) {
 				return array_shift($args);
 			} else {
-				return $app[$this->name($class->name, $param->getName())];
+				return $this->provider($class->name, $param->getName());
 			}
 		}, $fun->getParameters());
 	}
@@ -48,8 +62,21 @@ class AutowiringService {
 		}
 	}
 
-	public function provide($service_name) {
-		$classname = get_class($this->app[$service_name]);
+	public function configure($classname) {
+		$resolver = $this->provider(InjectableResolver::class);
+		$ref = new \ReflectionClass($classname);
+		$props = $ref->getProperties(\ReflectionProperty::IS_PUBLIC | \ReflectionProperty::IS_PROTECTED | \ReflectionProperty::IS_PRIVATE);
+		foreach ($props as $prop) {
+			$prop->setAccessible(true);
+			$key = $prop->getName();
+			if ($resolver->provides($this->app, $key)) {
+				$prop->setValue($this->provider($classname), $resolver->value($this->app, $key));
+			}
+		}
+	}
+
+	public function expose($service_name, $classname = null) {
+		$classname = is_null($classname) ? get_class($this->app[$service_name]) : $classname;
 		return $this->register($classname, function($app) use ($service_name) {
 			return $app[$service_name];
 		});
@@ -57,29 +84,38 @@ class AutowiringService {
 
 	public function name($classname, $paramname = null) {
 		if ($classname == Injectable::class) {
-			$converted = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $paramname));
-			$hash = substr(sha1($converted), 0, 10);
-			if (!isset($this->app[$hash])) {
-				$this->app[$hash] = function($app) use ($converted) {
-					return new Injectable($app[$converted]);
-				};
-			}
-			return $hash;
+			return $this->provider(InjectableResolver::class)->wire($this->app, $paramname);
 		} else {
 			return substr(sha1(str_replace('\\', '.', $classname)), 0, 10);
 		}
 	}
 
-	public function provides($classname, $paramname = null) {
-		return isset($this->app[$this->name($classname, $paramname)]);
+	public function provides($classname, $paramname = null, $strict = false) {
+		return isset($this->app[$this->name($classname, $paramname)]) || (!$strict && $this->hasTrait($classname, Autowire::class));
 	}
 
 	public function provider($classname, $paramname = null) {
-		return $this->app[$this->name($classname,$paramname)];
+		if ($this->provides($classname, $paramname, true)) {
+			return $this->app[$this->name($classname, $paramname)];
+		} else if ($this->hasTrait($classname, Autowire::class)) {
+			$name = $this->wire($classname);
+			if ($this->hasTrait($classname, Autoconfigure::class)) {
+				$this->configure($classname);
+			}
+			return $this->app[$name];
+		} else {
+			throw new \InvalidArgumentException('no provider for "'.$classname.'"');
+		}
 	}
 
-	public function invoke($anonymous, $args = []) {
-		$ref = new \ReflectionFunction($anonymous);
+	public function provide($classname, $closure) {
+		return $this->register($classname, function($app) use ($closure) {
+			return $this->invoke($closure, $app);
+		});
+	}
+
+	public function invoke($closure, $args = []) {
+		$ref = new \ReflectionFunction($closure);
 		$args = $this->mapParameters($this->app, $ref, $args);
 		return $ref->invokeArgs($args);
 	}

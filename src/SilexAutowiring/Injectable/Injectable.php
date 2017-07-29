@@ -1,6 +1,6 @@
 <?php
 
-namespace SilexAutowiring;
+namespace SilexAutowiring\Injectable;
 
 class Injectable {
 
