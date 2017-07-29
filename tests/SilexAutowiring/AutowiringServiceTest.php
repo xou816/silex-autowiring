@@ -97,11 +97,11 @@ class AutowiringServiceTest extends WebTestCase {
 	}
 
 	public function testCustomProvidersCanBeWritten() {
-		$this->auto()->provide(SimpleService::class, function() {
-			return new SimpleService();
+		$this->auto()->wire(SimpleService::class);
+		$name = $this->auto()->provide(ServiceWithSingleDependency::class, function($app, SimpleService $s) {
+			return new ServiceWithSingleDependency($s);
 		});
-		$service = $this->auto()->provider(SimpleService::class);
-		$this->assertTrue($service->isAvailable());
+		$this->assertTrue($this->app[$name]->isAvailable());
 	}
 
 	public function testServicesCanBeInjectedInControllers() {
@@ -148,14 +148,6 @@ class AutowiringServiceTest extends WebTestCase {
 		};
 		$res = $this->auto()->invoke($fun, ['Hello to you too!']);
 		$this->assertEquals($res, 'Hello world! Hello to you too!');
-	}
-
-	public function testServicesCanBeProvidedWithACustomClosure() {
-		$this->auto()->wire(SimpleService::class);
-		$name = $this->auto()->provide(ServiceWithSingleDependency::class, function($app, SimpleService $s) {
-			return new ServiceWithSingleDependency($s);
-		});
-		$this->assertTrue($this->app[$name]->isAvailable());
 	}
 
 	public function testServicesCanBeWiredWithATrait() {
