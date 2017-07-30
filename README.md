@@ -183,21 +183,22 @@ Since an instance of `Injectable` has to be passed to the constructor, you can r
 It is not possible to rely on type hinting to inject services on properties. Therefore, this feature is intended for configuration instead.
 
 ```php
-$app['foo_options'] = array('bar' => true);
-$app['foo_options.baz'] = false;
+$app['fooconfig'] = array('bar' => true);
+$app['fooconfig.baz'] = false;
 
 class Foo {
-    private $fooOptions;
+    private $bar;
+    private $baz;
 }
 $app['autowiring']->wire(Foo::class);
-$app['autowiring']->configure(Foo::class);
+$app['autowiring']->configure(Foo::class, 'fooconfig');
 ```
 
 It resolves names much like with injectables, but injects plain values instead.
 
 ### Injection resolver
 
-You might dislike the way `Injectable` and `configure` handle names (from snake case to camel case). It is possible to tweak this behaviour by providing (using `wire` for instance!) a custom implementation of `SilexAutowiring\Injectable\InjectableResolver`. This task is made easier by extending the `SilexAutowiring\Injectable\AbstractCompositeKeyResolver`, which allows handling identifiers such as 'foo_options.baz' above.
+You might dislike the way `Injectable` and `configure` handle names (from snake case to camel case). It is possible to tweak this behaviour by providing (using `wire` for instance!) a custom implementation of `SilexAutowiring\Injectable\InjectableResolver`. This task is made easier by extending the `SilexAutowiring\Injectable\AbstractCompositeKeyResolver`, which allows handling identifiers such as `foo_options.baz` above.
 
 You may also just `wire` the `SilexAutowiring\Injectable\IdentityResolver` class into your app to use a simpler resolution mechanism (no casing style alteration).
 

@@ -44,9 +44,14 @@ class ServiceWithInjectableDependency extends TestService {
 }
 
 class AutowiredService extends TestService {
-	use Autowire, Autoconfigure;
-	public $config;
+	use Autowire;
 	public function __construct(SimpleService $dep) {}
+}
+
+class AutoconfiguredService extends TestService {
+	use Autoconfigure;
+	private static $autoconfigure = 'myservice';
+	public $config;
 }
 
 class ServiceWithConfig extends TestService {
@@ -150,13 +155,6 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals($res, 'Hello world! Hello to you too!');
 	}
 
-	public function testServicesCanBeWiredWithATrait() {
-		$this->app['config'] = ['key' => 'value'];
-		$this->auto()->wire(SimpleService::class);
-		$this->assertTrue($this->auto()->provider(AutowiredService::class)->isAvailable());
-		$this->assertEquals('value', $this->auto()->provider(AutowiredService::class)->config['key']);
-	}
-
 	public function testInjectableBehaviourCanBeTweaked() {
 		$this->auto()->wire(IdentityResolver::class);
 		$this->app['injectable_service'] = ['available' => true];
@@ -169,15 +167,18 @@ class AutowiringServiceTest extends WebTestCase {
 
 	public function testServicesCanBeConfiguredWithEase() {
 		$app = $this->app;
-		$app['host'] = 'localhost';
-		$app['port'] = '443';
-		$app['root'] = '/';
-		$app['urls.home'] = '/home';
-		$app['url.account'] = ['details' => 'ignore this!'];
-		$app['urls.account.details'] = '/account';
-		$app['urls.account.logout'] = '/logout';
-		$name = $this->auto()->wire(ServiceWithConfig::class);
-		$this->auto()->configure(ServiceWithConfig::class);
+		$app['myservice.host'] = 'localhost';
+		$app['myservice.port'] = '443';
+		$app['myservice.root'] = '/';
+		$app['myservice.urls.home'] = '/home';
+		$app['myservice.url.account'] = ['details' => 'ignore this!'];
+		$app['myservice.urls.account.details'] = '/account';
+		$app['myservice.urls.account.logout'] = '/logout';
+		$name = $this->auto()
+			->class(ServiceWithConfig::class)
+			->wire()
+			->configure('myservice')
+			->name();
 		$service = $app[$name];
 		$this->assertEquals($service->host, 'localhost');
 		$this->assertEquals($service->port, '443');
@@ -185,6 +186,17 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals($service->urls['home'], '/home');
 		$this->assertEquals($service->urls['account']['details'], '/account');
 		$this->assertEquals($service->urls['account']['logout'], '/logout');
+	}
+
+	public function testServicesCanBeWiredWithATrait() {
+		$this->auto()->wire(SimpleService::class);
+		$this->assertTrue($this->auto()->provider(AutowiredService::class)->isAvailable());
+	}
+
+	public function testServicesCanBeConfiguredWithATrait() {
+		$this->app['myservice.config'] = ['key' => 'value'];
+		$this->auto()->wire(AutoconfiguredService::class);
+		$this->assertEquals('value', $this->auto()->provider(AutoconfiguredService::class)->config['key']);
 	}
 
 }

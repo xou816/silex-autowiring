@@ -3,6 +3,7 @@
 namespace SilexAutowiring;
 
 use Silex\Application;
+use SilexAutowiring\ClassHelper;
 use SilexAutowiring\Traits\Autowire;
 use SilexAutowiring\Traits\Autoconfigure;
 use SilexAutowiring\Injectable\Injectable;
@@ -29,7 +30,7 @@ class AutowiringService {
 	private function hasTrait($classname, $trait) {
 		try {
 			$class = new \ReflectionClass($classname);
-			return !is_null($class) && in_array($trait, $class->getTraitNames());
+			return in_array($trait, $class->getTraitNames());
 		} catch (\ReflectionException $e) {
 			return false;
 		}
@@ -47,30 +48,46 @@ class AutowiringService {
 	}
 
 	public function wire($classname, $args = []) {
+		$name = null;
 		if (method_exists($classname, '__construct')) {
 			$ref = new \ReflectionMethod($classname, '__construct');
-			return $this->register($classname, function($app) use ($classname, $ref, $args) {
+			$name = $this->register($classname, function($app) use ($classname, $ref, $args) {
 				$args = $this->mapParameters($app, $ref, $args);
 				$class = new \ReflectionClass($classname);
 				return $class->newInstanceArgs($args);
 			});
 		} else {
-			return $this->register($classname, function($app) use ($classname) {
+			$name = $this->register($classname, function($app) use ($classname) {
 				$class = new \ReflectionClass($classname);
 				return $class->newInstance();
 			});
 		}
+		if ($this->hasTrait($classname, Autoconfigure::class)) {
+			$this->configure($classname);
+		}
+		return $name;
 	}
 
-	public function configure($classname) {
+	public function configure($classname, $root = null) {
 		$resolver = $this->provider(InjectableResolver::class);
+		$service = $this->provider($classname);
 		$ref = new \ReflectionClass($classname);
+		try {
+			$root = $ref->getProperty('autoconfigure');
+			$root->setAccessible(true);
+			$root = $root->getValue($service);
+		} catch (\ReflectionException $e) {}
 		$props = $ref->getProperties(\ReflectionProperty::IS_PUBLIC | \ReflectionProperty::IS_PROTECTED | \ReflectionProperty::IS_PRIVATE);
 		foreach ($props as $prop) {
 			$prop->setAccessible(true);
 			$key = $prop->getName();
-			if ($resolver->provides($this->app, $key)) {
-				$prop->setValue($this->provider($classname), $resolver->value($this->app, $key));
+			$base = is_null($root) ? $key : $root;
+			if ($resolver->provides($this->app, $base)) {
+				$value = $resolver->value($this->app, $base);
+				if (!is_null($root) && isset($value[$key])) {
+					$value = $value[$key];
+				}
+				$prop->setValue($service, $value);
 			}
 		}
 	}
@@ -99,9 +116,6 @@ class AutowiringService {
 			return $this->app[$this->name($classname, $paramname)];
 		} else if ($this->hasTrait($classname, Autowire::class)) {
 			$name = $this->wire($classname);
-			if ($this->hasTrait($classname, Autoconfigure::class)) {
-				$this->configure($classname);
-			}
 			return $this->app[$name];
 		} else {
 			throw new \InvalidArgumentException('no provider for "'.$classname.'"');
@@ -118,6 +132,10 @@ class AutowiringService {
 		$ref = new \ReflectionFunction($closure);
 		$args = $this->mapParameters($this->app, $ref, $args);
 		return $ref->invokeArgs($args);
+	}
+
+	public function class($classname) {
+		return new ClassHelper($this, $classname);
 	}
 
 }
