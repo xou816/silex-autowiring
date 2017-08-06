@@ -165,7 +165,31 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals($res,  true);
 	}
 
-	public function testServicesCanBeConfiguredWithEase() {
+	public function testServicesCanBeConfigured() {
+		$app = $this->app;
+		$app['host'] = 'localhost';
+		$app['port'] = '443';
+		$app['root'] = '/';
+		$app['urls.home'] = '/home';
+		$app['url.account'] = ['details' => 'ignore this!'];
+		$app['urls.account.details'] = '/account';
+		$app['urls.account.logout'] = '/logout';
+		$name = $this->auto()
+			->class(ServiceWithConfig::class)
+			->wire()
+			->configure()
+			->name();
+		$service = $app[$name];
+		$this->assertEquals($service->host, 'localhost');
+		$this->assertEquals($service->port, '443');
+		$this->assertEquals($service->root, '/');
+		$this->assertEquals($service->urls['home'], '/home');
+		$this->assertEquals($service->urls['account']['details'], '/account');
+		$this->assertEquals($service->urls['account']['logout'], '/logout');
+		$this->assertEquals($service->unset, null);
+	}
+
+	public function testServicesCanBeConfiguredWithRootName() {
 		$app = $this->app;
 		$app['myservice.host'] = 'localhost';
 		$app['myservice.port'] = '443';
@@ -186,6 +210,7 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals($service->urls['home'], '/home');
 		$this->assertEquals($service->urls['account']['details'], '/account');
 		$this->assertEquals($service->urls['account']['logout'], '/logout');
+		$this->assertEquals($service->unset, null);
 	}
 
 	public function testServicesCanBeWiredWithATrait() {

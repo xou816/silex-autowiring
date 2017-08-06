@@ -86,8 +86,10 @@ class AutowiringService {
 				$value = $resolver->value($this->app, $base);
 				if (!is_null($root) && isset($value[$key])) {
 					$value = $value[$key];
+					$prop->setValue($service, $value);
+				} else if (is_null($root)) {
+					$prop->setValue($service, $value);
 				}
-				$prop->setValue($service, $value);
 			}
 		}
 	}
