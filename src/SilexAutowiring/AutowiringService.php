@@ -6,7 +6,7 @@ use Silex\Application;
 use SilexAutowiring\ClassHelper;
 use SilexAutowiring\Traits\Autowire;
 use SilexAutowiring\Traits\Autoconfigure;
-use SilexAutowiring\Injectable\Injectable;
+use SilexAutowiring\Injectable\InjectableInterface;
 use SilexAutowiring\Injectable\InjectableResolver;
 use SilexAutowiring\Injectable\CasingShiftResolver;
 
@@ -47,6 +47,47 @@ class AutowiringService {
 		}, $fun->getParameters());
 	}
 
+	private function isInjectable($classname) {
+		try {
+			$ref = new \ReflectionClass($classname);
+			return $ref->implementsInterface(InjectableInterface::class);
+		} catch (\ReflectionException $e) {
+			return false;
+		}
+	}
+
+	private function configureWithRoot($root, $props) {
+		return function($service, Application $app) use ($root, $props) {
+			$resolver = $app['autowiring']->provider(InjectableResolver::class);
+			if ($resolver->provides($app, $root)) {
+				$arr = $resolver->value($app, $root);
+				foreach ($props as $prop) {
+					$prop->setAccessible(true);
+					$key = $prop->getName();
+					if (isset($arr[$key])) {
+						$prop->setValue($service, $arr[$key]);
+					}
+				}
+			}
+			return $service;
+		};
+	}
+
+	private function configureNoRoot($props) {
+		return function($service, Application $app) use ($props) {
+			$resolver = $app['autowiring']->provider(InjectableResolver::class);
+			foreach ($props as $prop) {
+				$prop->setAccessible(true);
+				$key = $prop->getName();
+				if ($resolver->provides($app, $key)) {
+					$value = $resolver->value($app, $key);
+					$prop->setValue($service, $value);
+				}
+			}
+			return $service;
+		};
+	}
+
 	public function wire($classname, $args = []) {
 		$name = null;
 		if (method_exists($classname, '__construct')) {
@@ -68,30 +109,22 @@ class AutowiringService {
 		return $name;
 	}
 
+	public function extend($classname, $closure) {
+		$this->app->extend($this->name($classname), $closure);
+	}
+
 	public function configure($classname, $root = null) {
-		$resolver = $this->provider(InjectableResolver::class);
-		$service = $this->provider($classname);
 		$ref = new \ReflectionClass($classname);
-		try {
-			$root = $ref->getProperty('autoconfigure');
-			$root->setAccessible(true);
-			$root = $root->getValue($service);
-		} catch (\ReflectionException $e) {}
-		$props = $ref->getProperties(\ReflectionProperty::IS_PUBLIC | \ReflectionProperty::IS_PROTECTED | \ReflectionProperty::IS_PRIVATE);
-		foreach ($props as $prop) {
-			$prop->setAccessible(true);
-			$key = $prop->getName();
-			$base = is_null($root) ? $key : $root;
-			if ($resolver->provides($this->app, $base)) {
-				$value = $resolver->value($this->app, $base);
-				if (!is_null($root) && isset($value[$key])) {
-					$value = $value[$key];
-					$prop->setValue($service, $value);
-				} else if (is_null($root)) {
-					$prop->setValue($service, $value);
-				}
+		foreach ($ref->getProperties(\ReflectionProperty::IS_STATIC) as $prop) {
+			if ($prop->getName() === 'autoconfigure') {
+				$prop->setAccessible(true);
+				$root = $prop->getValue();
+				break;
 			}
 		}
+		$props = $ref->getProperties(\ReflectionProperty::IS_PUBLIC | \ReflectionProperty::IS_PROTECTED | \ReflectionProperty::IS_PRIVATE & !\ReflectionProperty::IS_STATIC);
+		$closure = is_null($root) ? $this->configureNoRoot($props) : $this->configureWithRoot($root, $props);
+		$this->extend($classname, $closure);
 	}
 
 	public function expose($service_name, $classname = null) {
@@ -102,8 +135,8 @@ class AutowiringService {
 	}
 
 	public function name($classname, $paramname = null) {
-		if ($classname == Injectable::class) {
-			return $this->provider(InjectableResolver::class)->wire($this->app, $paramname);
+		if ($this->isInjectable($classname)) {
+			return $this->provider(InjectableResolver::class)->wire($this->app, $classname, $paramname);
 		} else {
 			return substr(sha1(str_replace('\\', '.', $classname)), 0, 10);
 		}

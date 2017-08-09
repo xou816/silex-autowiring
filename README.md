@@ -178,6 +178,21 @@ $app['autowiring']->wire(Foo::class);
 The autowiring service knows how to inject the correct service as it infers the service's name from the constructor argument's name (`fooOptions` being converted from camel case to snake case).
 Since an instance of `Injectable` has to be passed to the constructor, you can retrieve the real service by calling `get`.
 
+If you intend to inject a configuration array, you can instead use `SilexAutowiring\Injectable\Configuration`, which works the exactly like `Injectable` (both implement the `SilexAutowiring\Injectable\InjectableInterface`), but has array access.
+
+```php
+$app['foo_options'] = array('bar' => true);
+$app['foo_options.baz'] = false;
+
+class Foo {
+    public __construct(Configuration $fooOptions) {
+        $this->bar = $fooOptions['bar']; // true
+        $this->baz = $fooOptions['baz']; // false
+    }
+}
+$app['autowiring']->wire(Foo::class);
+```
+
 ### Property injection
 
 It is not possible to rely on type hinting to inject services on properties. Therefore, this feature is intended for configuration instead.
@@ -194,7 +209,9 @@ $app['autowiring']->wire(Foo::class);
 $app['autowiring']->configure(Foo::class, 'fooconfig');
 ```
 
-It resolves names much like with injectables, but injects plain values instead.
+It resolves names much like with `Injectable`s, but injects plain values instead.
+
+**Warning:** injected values on properties are only available after construction.
 
 ### Injection resolver
 
@@ -204,6 +221,6 @@ You may also just `wire` the `SilexAutowiring\Injectable\IdentityResolver` class
 
 ## Experimental
 
-You may also use the `SilexAutowiring\Traits\Autowire` and `SilexAutowiring\Traits\Autoconfigure` instead of calling `wire` and `configure`.
+You may also use the `SilexAutowiring\Traits\Autowire` and `SilexAutowiring\Traits\Autoconfigure` traits instead of calling `wire` and `configure`.
 
-This is however not equivalent and likely much worse in terms of performance.
+This is however not completely equivalent and likely worse in terms of performance.

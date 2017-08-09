@@ -12,11 +12,11 @@ class IdentityResolver extends AbstractCompositeKeyResolver {
 		return isset($app[$key]) || $this->compositeKeyExists($app, $key);
 	}
 
-	public function wire(Application $app, $key) {
+	public function wire(Application $app, $classname, $key) {
 		$hash = substr(sha1($key), 0, 10);
 		if (!isset($app[$hash])) {
-			$app[$hash] = function($a) use ($key) {
-				return new Injectable($this->getCompositeKey($a, $key));
+			$app[$hash] = function($a) use ($key, $classname) {
+				return new $classname($this->getCompositeKey($a, $key));
 			};
 		}
 		return $hash;

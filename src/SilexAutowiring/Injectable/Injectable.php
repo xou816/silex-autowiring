@@ -2,7 +2,9 @@
 
 namespace SilexAutowiring\Injectable;
 
-class Injectable {
+use SilexAutowiring\Injectable\InjectableInterface;
+
+class Injectable implements InjectableInterface {
 
 	private $object;
 

@@ -35,7 +35,7 @@ abstract class AbstractCompositeKeyResolver implements InjectableResolver {
 	}
 
 	abstract public function provides(Application $app, $key);
-	abstract public function wire(Application $app, $key);
+	abstract public function wire(Application $app, $classname, $key);
 	abstract public function value(Application $app, $key);
 
 }

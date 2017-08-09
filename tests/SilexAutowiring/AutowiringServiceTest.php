@@ -6,6 +6,7 @@ use SilexAutowiring\AutowiringServiceProvider;
 use SilexAutowiring\Traits\Autowire;
 use SilexAutowiring\Traits\Autoconfigure;
 use SilexAutowiring\Injectable\Injectable;
+use SilexAutowiring\Injectable\Configuration;
 use SilexAutowiring\Injectable\IdentityResolver;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -222,6 +223,25 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->app['myservice.config'] = ['key' => 'value'];
 		$this->auto()->wire(AutoconfiguredService::class);
 		$this->assertEquals('value', $this->auto()->provider(AutoconfiguredService::class)->config['key']);
+	}
+
+	public function testInjectaleConfigurationIsUsableAsArray() {
+		$app = $this->app;
+		$app['myservice.host'] = 'localhost';
+		$app['myservice.port'] = '443';
+		$app['myservice.root'] = '/';
+		$app['myservice.urls.home'] = '/home';
+		$app['myservice.url.account'] = ['details' => 'ignore this!'];
+		$app['myservice.urls.account.details'] = '/account';
+		$app['myservice.urls.account.logout'] = '/logout';
+		$myservice = $this->auto()->provider(Configuration::class, 'myservice');
+		$this->assertEquals($myservice['host'], 'localhost');
+		$this->assertEquals($myservice['port'], '443');
+		$this->assertEquals($myservice['root'], '/');
+		$this->assertEquals($myservice['urls']['home'], '/home');
+		$this->assertEquals($myservice['urls']['account']['details'], '/account');
+		$this->assertEquals($myservice['urls']['account']['logout'], '/logout');
+		$this->assertFalse(isset($myservice['unset']));
 	}
 
 }
