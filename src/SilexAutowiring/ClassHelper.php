@@ -28,4 +28,12 @@ class ClassHelper {
 		return $this->auto->name($this->classname);
 	}
 
+	public function provide() {
+		return $this->auto->provide($this->classname);
+	}
+
+	public function alias($alias) {
+		return $this->auto->alias($alias, $this->classname);
+	}
+
 }

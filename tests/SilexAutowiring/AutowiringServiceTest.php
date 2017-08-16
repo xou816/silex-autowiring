@@ -2,6 +2,7 @@
 
 use Silex\Application;
 use Silex\WebTestCase;
+use SilexAutowiring\AutowiringService;
 use SilexAutowiring\AutowiringServiceProvider;
 use SilexAutowiring\Traits\Autowire;
 use SilexAutowiring\Traits\Autoconfigure;
@@ -153,7 +154,9 @@ class AutowiringServiceTest extends WebTestCase {
 			return $service->sayHello().' '.$arg;
 		};
 		$res = $this->auto()->invoke($fun, ['Hello to you too!']);
+		$curried = $this->auto()->curry($fun);
 		$this->assertEquals($res, 'Hello world! Hello to you too!');
+		$this->assertEquals($curried('Hello to you too!'), 'Hello world! Hello to you too!');
 	}
 
 	public function testInjectableBehaviourCanBeTweaked() {
@@ -225,7 +228,7 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals('value', $this->auto()->provider(AutoconfiguredService::class)->config['key']);
 	}
 
-	public function testInjectaleConfigurationIsUsableAsArray() {
+	public function testInjectableConfigurationIsUsableAsArray() {
 		$app = $this->app;
 		$app['myservice.host'] = 'localhost';
 		$app['myservice.port'] = '443';
@@ -242,6 +245,33 @@ class AutowiringServiceTest extends WebTestCase {
 		$this->assertEquals($myservice['urls']['account']['details'], '/account');
 		$this->assertEquals($myservice['urls']['account']['logout'], '/logout');
 		$this->assertFalse(isset($myservice['unset']));
+	}
+
+	public function testAutowiringServiceIsAvailable() {
+		$this->assertTrue($this->auto()->provides(AutowiringService::class));
+	}
+
+	public function testDebugInformsAboutUsedServices() {
+		$this->auto()->debug();
+		$this->auto()->wire(ServiceWithConfig::class);
+		$this->auto()->wire(SimpleService::class);
+		$this->auto()->wire(ServiceWithSingleDependency::class);
+		$this->app->get('/', function(AutowiringService $auto, ServiceWithSingleDependency $s) {
+			return json_encode($auto->getDebugInfo());
+		});
+		$client = $this->createClient();
+		$client->request('GET', '/');
+		$payload = json_decode($client->getResponse()->getContent(), true);
+		$this->assertFalse($payload[ServiceWithConfig::class]);
+		$this->assertTrue($payload[SimpleService::class]);
+		$this->assertTrue($payload[ServiceWithSingleDependency::class]);
+	}
+
+	public function testServicesCanBeAliased() {
+		$this->auto()->class(SimpleService::class)
+			->wire()
+			->alias('myalias');
+		$this->assertEquals($this->app['myalias']->sayHello(), 'Hello world!');
 	}
 
 }

@@ -13,17 +13,41 @@ use SilexAutowiring\Injectable\CasingShiftResolver;
 class AutowiringService {
 
 	private $app;
+	private $status = [];
+	private $debug = false;
 
 	public function __construct(Application $app) {
 		$this->app = $app;
 		$this->wire(CasingShiftResolver::class);
 	}
 
-	private function register($classname, $closure) {
-		$this->app[$this->name($classname)] = $closure;
-		foreach (class_implements($classname) as $interface) {
-			$this->app[$this->name($interface)] = $closure;
+	public function debug() {
+		$this->debug = true;
+	}
+
+	public function getDebugInfo() {
+		return $this->status;
+	}
+
+	private function debugRegistration($classname) {
+		$this->status[$classname] = false;
+		$this->extend($classname, function($service, Application $app) use ($classname) {
+			$this->status[$classname] = true;
+			return $service;
+		});
+	}
+
+	private function getContainerNames($classname) {
+		return array_map(function($name) {
+			return $this->name($name);
+		}, class_implements($classname) + [$classname]);
+	}
+
+	private function register($classname, callable $closure) {
+		foreach ($this->getContainerNames($classname) as $name) {
+			$this->app[$name] = $closure;
 		}
+		if ($this->debug) $this->debugRegistration($classname);
 		return $this->name($classname);
 	}
 
@@ -58,7 +82,7 @@ class AutowiringService {
 
 	private function configureWithRoot($root, $props) {
 		return function($service, Application $app) use ($root, $props) {
-			$resolver = $app['autowiring']->provider(InjectableResolver::class);
+			$resolver = $this->provider(InjectableResolver::class);
 			if ($resolver->provides($app, $root)) {
 				$arr = $resolver->value($app, $root);
 				foreach ($props as $prop) {
@@ -75,7 +99,7 @@ class AutowiringService {
 
 	private function configureNoRoot($props) {
 		return function($service, Application $app) use ($props) {
-			$resolver = $app['autowiring']->provider(InjectableResolver::class);
+			$resolver = $this->provider(InjectableResolver::class);
 			foreach ($props as $prop) {
 				$prop->setAccessible(true);
 				$key = $prop->getName();
@@ -99,8 +123,7 @@ class AutowiringService {
 			});
 		} else {
 			$name = $this->register($classname, function($app) use ($classname) {
-				$class = new \ReflectionClass($classname);
-				return $class->newInstance();
+				return new $classname();
 			});
 		}
 		if ($this->hasTrait($classname, Autoconfigure::class)) {
@@ -109,8 +132,17 @@ class AutowiringService {
 		return $name;
 	}
 
-	public function extend($classname, $closure) {
-		$this->app->extend($this->name($classname), $closure);
+	public function extend($classname, callable $closure) {
+		foreach ($this->getContainerNames($classname) as $name) {
+			$this->app->extend($name, $closure);
+		}
+	}
+
+	public function factory($classname, callable $closure) {
+		foreach ($this->getContainerNames($classname) as $name) {
+			$this->app->factory($name, $this->curry($closure));
+		}
+		if ($this->debug) $this->debugRegistration($classname);
 	}
 
 	public function configure($classname, $root = null) {
@@ -157,16 +189,27 @@ class AutowiringService {
 		}
 	}
 
-	public function provide($classname, $closure) {
-		return $this->register($classname, function($app) use ($closure) {
-			return $this->invoke($closure, [$app]);
-		});
+	public function provide($classname, callable $closure) {
+		return $this->register($classname, $this->curry($closure));
 	}
 
-	public function invoke($closure, $args = []) {
+	public function invoke(callable $closure, $args = []) {
 		$ref = new \ReflectionFunction($closure);
 		$args = $this->mapParameters($this->app, $ref, $args);
 		return $ref->invokeArgs($args);
+	}
+
+	public function curry(callable $closure) {
+		return function() use ($closure) {
+			$args = func_get_args();
+			return $this->invoke($closure, $args);
+		};
+	}
+
+	public function alias($alias, $classname) {
+		$this->app[$alias] = function($app) use ($classname) {
+			return $app[$this->name($classname)];
+		};
 	}
 
 	public function class($classname) {
