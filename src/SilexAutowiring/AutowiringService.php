@@ -37,15 +37,10 @@ class AutowiringService {
 		});
 	}
 
-	private function getContainerNames($classname) {
-		return array_map(function($name) {
-			return $this->name($name);
-		}, class_implements($classname) + [$classname]);
-	}
-
 	private function register($classname, callable $closure) {
-		foreach ($this->getContainerNames($classname) as $name) {
-			$this->app[$name] = $closure;
+		$this->app[$this->name($classname)] = $closure;
+		foreach (class_implements($classname) as $interface) {
+			$this->alias($this->name($interface), $classname);
 		}
 		if ($this->debug) $this->debugRegistration($classname);
 		return $this->name($classname);
@@ -133,15 +128,11 @@ class AutowiringService {
 	}
 
 	public function extend($classname, callable $closure) {
-		foreach ($this->getContainerNames($classname) as $name) {
-			$this->app->extend($name, $closure);
-		}
+		$this->app->extend($this->name($classname), $closure);
 	}
 
 	public function factory($classname, callable $closure) {
-		foreach ($this->getContainerNames($classname) as $name) {
-			$this->app->factory($name, $this->curry($closure));
-		}
+		$this->app->factory($this->name($classname), $this->curry($closure));
 		if ($this->debug) $this->debugRegistration($classname);
 	}
 
