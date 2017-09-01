@@ -203,7 +203,7 @@ class AutowiringService {
 		};
 	}
 
-	public function class($classname) {
+	public function withClass($classname) {
 		return new ClassHelper($this, $classname);
 	}
 

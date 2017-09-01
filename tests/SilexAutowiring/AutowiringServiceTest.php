@@ -179,7 +179,7 @@ class AutowiringServiceTest extends WebTestCase {
 		$app['urls.account.details'] = '/account';
 		$app['urls.account.logout'] = '/logout';
 		$name = $this->auto()
-			->class(ServiceWithConfig::class)
+			->withClass(ServiceWithConfig::class)
 			->wire()
 			->configure()
 			->name();
@@ -203,7 +203,7 @@ class AutowiringServiceTest extends WebTestCase {
 		$app['myservice.urls.account.details'] = '/account';
 		$app['myservice.urls.account.logout'] = '/logout';
 		$name = $this->auto()
-			->class(ServiceWithConfig::class)
+			->withClass(ServiceWithConfig::class)
 			->wire()
 			->configure('myservice')
 			->name();
@@ -268,7 +268,7 @@ class AutowiringServiceTest extends WebTestCase {
 	}
 
 	public function testServicesCanBeAliased() {
-		$this->auto()->class(SimpleService::class)
+		$this->auto()->withClass(SimpleService::class)
 			->wire()
 			->alias('myalias');
 		$this->assertEquals($this->app['myalias']->sayHello(), 'Hello world!');
