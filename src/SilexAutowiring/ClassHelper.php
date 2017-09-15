@@ -36,4 +36,8 @@ class ClassHelper {
 		return $this->auto->alias($alias, $this->classname);
 	}
 
+	public function provider() {
+		return $this->auto->provider($this->classname);
+	}
+
 }

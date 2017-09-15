@@ -204,12 +204,11 @@ class AutowiringServiceTest extends WebTestCase {
 		$app['myservice.url.account'] = ['details' => 'ignore this!'];
 		$app['myservice.urls.account.details'] = '/account';
 		$app['myservice.urls.account.logout'] = '/logout';
-		$name = $this->auto()
+		$service = $this->auto()
 			->withClass(ServiceWithConfig::class)
 			->wire()
 			->configure('myservice')
-			->name();
-		$service = $app[$name];
+			->provider();
 		$this->assertEquals($service->host, 'localhost');
 		$this->assertEquals($service->port, '443');
 		$this->assertEquals($service->root, '/');
