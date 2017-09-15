@@ -93,7 +93,17 @@ You can also inject services in a closure, using `invoke`:
 $fun = function(Foo $foo, $arg) {
     $foo->bar($arg);
 };
-$app['autowiring']->invoke($fun, ['bar']);
+$app['autowiring']->invoke($fun, ['bar']); // Calls $foo->bar('bar'), where $foo has class Foo
+```
+
+If you want to delay execution of a closure (that is, obtain a closure), use `partial` instead:
+
+```php
+$fun = function(Foo $foo, $arg) {
+    $foo->bar($arg);
+};
+$newfun = $app['autowiring']->partial($fun);
+$newfun('bar'); // Calls $foo->bar('bar'), where $foo has class Foo
 ```
 
 ### Interfaces

@@ -56,14 +56,19 @@ class AutowiringService {
 	}
 
 	private function mapParameters(Application $app, \ReflectionFunctionAbstract $fun, $args) {
-		return array_map(function($param) use ($app, $args) {
+		return array_reduce($fun->getParameters(), function($args, $param) use ($app) {
 			$class = $param->getClass();
 			if (is_null($class)) {
-				return array_shift($args);
+				$args[] = array_shift($args);
 			} else {
-				return $this->provider($class->name, $param->getName());
+				try {
+					$args[] = $this->provider($class->name, $param->getName());
+				} catch (\InvalidArgumentException $e) {
+					$args[] = array_shift($args);
+				}
 			}
-		}, $fun->getParameters());
+			return $args;
+		}, $args);
 	}
 
 	private function isInjectable($classname) {
@@ -132,7 +137,7 @@ class AutowiringService {
 	}
 
 	public function factory($classname, callable $closure) {
-		$this->app->factory($this->name($classname), $this->curry($closure));
+		$this->app->factory($this->name($classname), $this->partial($closure));
 		if ($this->debug) $this->debugRegistration($classname);
 	}
 
@@ -181,7 +186,7 @@ class AutowiringService {
 	}
 
 	public function provide($classname, callable $closure) {
-		return $this->register($classname, $this->curry($closure));
+		return $this->register($classname, $this->partial($closure));
 	}
 
 	public function invoke(callable $closure, $args = []) {
@@ -190,7 +195,7 @@ class AutowiringService {
 		return $ref->invokeArgs($args);
 	}
 
-	public function curry(callable $closure) {
+	public function partial(callable $closure) {
 		return function() use ($closure) {
 			$args = func_get_args();
 			return $this->invoke($closure, $args);

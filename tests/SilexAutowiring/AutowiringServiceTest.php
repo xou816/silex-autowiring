@@ -30,8 +30,10 @@ class ServiceWithSingleDependency extends TestService {
 	public function __construct(SimpleService $dep) {}
 }
 
+class Foo {}
+
 class ServiceWithManuallyInjectedArgument extends TestService {
-	public function __construct($target, SimpleService $dep) {
+	public function __construct($target, SimpleService $dep, Foo $foo) {
 		$this->target = $target;
 	}
 	public function sayHello() {
@@ -141,7 +143,7 @@ class AutowiringServiceTest extends WebTestCase {
 
 	public function testAdditionalArgumentsMayBeSuppliedToWire() {
 		$this->auto()->wire(SimpleService::class);
-		$this->auto()->wire(ServiceWithManuallyInjectedArgument::class, ['foo']);
+		$this->auto()->wire(ServiceWithManuallyInjectedArgument::class, ['foo', new Foo()]);
 		$service = $this->auto()->provider(ServiceWithManuallyInjectedArgument::class);
 		$this->assertTrue($service->isAvailable());
 		$this->assertEquals($service->sayHello(), 'Hello foo!');
@@ -154,9 +156,9 @@ class AutowiringServiceTest extends WebTestCase {
 			return $service->sayHello().' '.$arg;
 		};
 		$res = $this->auto()->invoke($fun, ['Hello to you too!']);
-		$curried = $this->auto()->curry($fun);
+		$partial = $this->auto()->partial($fun);
 		$this->assertEquals($res, 'Hello world! Hello to you too!');
-		$this->assertEquals($curried('Hello to you too!'), 'Hello world! Hello to you too!');
+		$this->assertEquals($partial('Hello to you too!'), 'Hello world! Hello to you too!');
 	}
 
 	public function testInjectableBehaviourCanBeTweaked() {
