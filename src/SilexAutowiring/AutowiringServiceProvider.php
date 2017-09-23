@@ -7,7 +7,6 @@ use Pimple\ServiceProviderInterface;
 use Silex\Api\BootableProviderInterface;
 use Silex\AppArgumentValueResolver;
 use Silex\Application;
-use SilexAutowiring\AutowiringService;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver\DefaultValueResolver;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver\RequestAttributeValueResolver;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver\RequestValueResolver;
@@ -17,7 +16,7 @@ class AutowiringServiceProvider implements ServiceProviderInterface, BootablePro
 
 	public function register(Container $app) {
 		$app['autowiring'] = new AutowiringService($app);
-		$app['autowiring']->expose('autowiring');
+		$app['autowiring']->expose('autowiring', AutowiringService::class);
 	}
 
 	public function boot(Application $app) {

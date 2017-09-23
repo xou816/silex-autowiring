@@ -3,8 +3,6 @@
 namespace SilexAutowiring\Injectable;
 
 use Silex\Application;
-use SilexAutowiring\Injectable\Injectable;
-use SilexAutowiring\Injectable\AbstractCompositeKeyResolver;
 
 class IdentityResolver extends AbstractCompositeKeyResolver {
 
@@ -23,7 +21,7 @@ class IdentityResolver extends AbstractCompositeKeyResolver {
 	}
 
 	public function value(Application $app, $key) {
-		return $this->getCompositeKey($key);
+		return $this->getCompositeKey($app, $key);
 	}
 
 }

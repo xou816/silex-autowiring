@@ -2,8 +2,6 @@
 
 namespace SilexAutowiring\Injectable;
 
-use SilexAutowiring\Injectable\InjectableInterface;
-
 class Configuration implements InjectableInterface, \ArrayAccess {
 
 	private $arr;

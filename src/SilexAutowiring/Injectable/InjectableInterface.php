@@ -3,5 +3,9 @@
 namespace SilexAutowiring\Injectable;
 
 interface InjectableInterface {
-	public function get();
+    /**
+     * Obtain the wrapped service.
+     * @return mixed
+     */
+    public function get();
 }

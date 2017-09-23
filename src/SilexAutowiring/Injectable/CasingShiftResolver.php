@@ -3,8 +3,6 @@
 namespace SilexAutowiring\Injectable;
 
 use Silex\Application;
-use SilexAutowiring\Injectable\Injectable;
-use SilexAutowiring\Injectable\AbstractCompositeKeyResolver;
 
 class CasingShiftResolver extends AbstractCompositeKeyResolver {
 

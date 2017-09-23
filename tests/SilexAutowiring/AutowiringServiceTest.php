@@ -33,7 +33,8 @@ class ServiceWithSingleDependency extends TestService {
 class Foo {}
 
 class ServiceWithManuallyInjectedArgument extends TestService {
-	public function __construct($target, SimpleService $dep, Foo $foo) {
+    private $target;
+    public function __construct($target, SimpleService $dep, Foo $foo) {
 		$this->target = $target;
 	}
 	public function sayHello() {
@@ -42,7 +43,8 @@ class ServiceWithManuallyInjectedArgument extends TestService {
 }
 
 class ServiceWithInjectableDependency extends TestService {
-	public function __construct(SimpleService $dep, Injectable $injectableService) {
+    public $injected;
+    public function __construct(SimpleService $dep, Injectable $injectableService) {
 		$this->injected = $injectableService->get();
 	}
 }
@@ -80,7 +82,10 @@ class AutowiringServiceTest extends WebTestCase {
 		return $app;
 	}
 
-	private function auto() {
+    /**
+     * @return AutowiringService
+     */
+    private function auto() {
 		return $this->app['autowiring'];
 	}
 

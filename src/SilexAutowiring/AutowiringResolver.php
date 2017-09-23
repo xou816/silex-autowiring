@@ -15,11 +15,17 @@ class AutowiringResolver implements ArgumentValueResolverInterface {
 		$this->app = $app;
 	}
 
-	public function supports(Request $request, ArgumentMetadata $argument) {
+    /**
+     * @inheritdoc
+     */
+    public function supports(Request $request, ArgumentMetadata $argument) {
 		return $this->app['autowiring']->provides($argument->getType(), $argument->getName());
 	}
 
-	public function resolve(Request $request, ArgumentMetadata $argument) {
+    /**
+     * @inheritdoc
+     */
+    public function resolve(Request $request, ArgumentMetadata $argument) {
 		yield $this->app['autowiring']->provider($argument->getType(), $argument->getName());
 	}
 

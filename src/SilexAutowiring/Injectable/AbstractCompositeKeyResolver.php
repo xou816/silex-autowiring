@@ -3,7 +3,6 @@
 namespace SilexAutowiring\Injectable;
 
 use Silex\Application;
-use SilexAutowiring\Injectable\InjectableResolver;
 
 abstract class AbstractCompositeKeyResolver implements InjectableResolver {
 
