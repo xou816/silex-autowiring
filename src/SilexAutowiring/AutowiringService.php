@@ -49,10 +49,11 @@ class AutowiringService {
     /**
      * @param string $classname
      * @param callable $closure
+     * @param bool $factory
      * @return string
      */
-    private function register($classname, callable $closure) {
-		$this->app[$this->name($classname)] = $closure;
+    private function register($classname, callable $closure, $factory = false) {
+		$this->app[$this->name($classname)] = $factory ? $this->app->factory($closure) : $closure;
 		foreach (class_implements($classname) as $interface) {
 			$this->alias($this->name($interface), $classname);
 		}
@@ -157,9 +158,10 @@ class AutowiringService {
      *
      * @param string $classname
      * @param array $args
+     * @param bool $factory
      * @return string the name of the service
      */
-    public function wire($classname, $args = []) {
+    public function wire($classname, $args = [], $factory = false) {
 		$name = null;
 		if (method_exists($classname, '__construct')) {
 			$ref = new \ReflectionMethod($classname, '__construct');
@@ -167,11 +169,11 @@ class AutowiringService {
 				$args = $this->mapParameters($app, $ref, $args);
 				$class = new \ReflectionClass($classname);
 				return $class->newInstanceArgs($args);
-			});
+			}, $factory);
 		} else {
 			$name = $this->register($classname, function($app) use ($classname) {
 				return new $classname();
-			});
+			}, $factory);
 		}
 		if ($this->hasTrait($classname, Autoconfigure::class)) {
 			$this->configure($classname);
@@ -190,19 +192,6 @@ class AutowiringService {
      */
     public function extend($classname, callable $closure) {
 		return $this->app->extend($this->name($classname), $closure);
-	}
-
-    /**
-     * Defines a factory service for a class.
-     * The callable should return an instance of the class.
-     * @see Application::factory
-     *
-     * @param $classname
-     * @param callable $closure
-     * @return callable
-     */
-    public function factory($classname, callable $closure) {
-        return $this->register($this->name($classname), $this->app->factory($this->partial($closure)));
 	}
 
     /**
@@ -298,10 +287,11 @@ class AutowiringService {
      *
      * @param string $classname
      * @param callable $closure
+     * @param bool $factory
      * @return string the name of the created service
      */
-    public function provide($classname, callable $closure) {
-		return $this->register($classname, $this->partial($closure));
+    public function provide($classname, callable $closure, $factory = false) {
+		return $this->register($classname, $this->partial($closure), $factory);
 	}
 
     /**

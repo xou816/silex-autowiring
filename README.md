@@ -1,11 +1,11 @@
 # silex-autowire
 
-A service to autowire your... services in [Silex](https://silex.sensiolabs.org/).
+A service to autowire them all! For [Silex](https://silex.sensiolabs.org/).
 
 Requirements
 ------------
 
-(to be determined)
+PHP 5.5+
 
 Installation
 ------------
@@ -47,33 +47,9 @@ $app['autowiring']->wire(Bar::class);
 
 The resulting instance of `Bar` can be found using `$app['autowiring']->provider(Bar::class);`. If you only need the service name, use the `name` method.
 
-**Every dependency of `Bar` has to be wired!**
+**Every dependency of `Bar` has to be known to the AutowiringService!**
 
-You can pass an array of arguments to `wire` : these arguments will be passed in order wherever an argument could not be resolved to a service. For instance, the following two examples are equivalent:
-
-```php
-class Foo {}
-class Bar {
-    public function __construct(Foo $foo, $arg1, $arg2) {
-        $this->foo = $foo;
-        echo $arg1.' '.$arg2; // => 'hello world'
-    }
-}
-$app['autowiring']->wire(Foo::class);
-$app['autowiring']->wire(Bar::class, ['hello', 'world']);
-```
-
-```php
-class Foo {}
-class Bar {
-    public function __construct($arg1, Foo $foo, $arg2) { // $args1 is now in first position
-        $this->foo = $foo;
-        echo $arg1.' '.$arg2; // => 'hello world'
-    }
-}
-$app['autowiring']->wire(Foo::class);
-$app['autowiring']->wire(Bar::class, ['hello', 'world']);
-```
+You can pass an array of arguments to `wire` : these arguments will be passed in order wherever an argument could not be resolved to a service.
 
 ### Controller injection
 
@@ -156,15 +132,14 @@ $app['autowiring']->wire(DAO::class); // will work just fine!
 
 The `AutowiringService` itself is exposed, and can therefore be injected!
 
-When you need to register a service and expose it, you should instead use `provide`.
+### Custom service providers
+
+You can control how an instance will be created using `provide`.
 
 ```php
 $app['autowiring']->provide(Foo::class, function($app, Bar $bar) {
     return new Foo($bar);
 });
-// Better than:
-// $app['whatever'] = function($app) { ... };
-// $app['autowiring']->expose('whatever');
 ```
 
 ### Injecting any service
@@ -191,16 +166,13 @@ Since an instance of `Injectable` has to be passed to the constructor, you can r
 If you intend to inject a configuration array, you can instead use `SilexAutowiring\Injectable\Configuration`, which works the exactly like `Injectable` (both implement the `SilexAutowiring\Injectable\InjectableInterface`), but has array access.
 
 ```php
-$app['foo_options'] = array('bar' => true);
-$app['foo_options.baz'] = false;
-
+// ...
 class Foo {
     public __construct(Configuration $fooOptions) {
         $this->bar = $fooOptions['bar']; // true
         $this->baz = $fooOptions['baz']; // false
     }
 }
-$app['autowiring']->wire(Foo::class);
 ```
 
 ### Property injection
@@ -234,3 +206,18 @@ You may also just `wire` the `SilexAutowiring\Injectable\IdentityResolver` class
 You may also use the `SilexAutowiring\Traits\Autowire` and `SilexAutowiring\Traits\Autoconfigure` traits instead of calling `wire` and `configure`.
 
 This is however not completely equivalent and likely worse in terms of performance.
+
+```php
+class Foo {
+    use Autowire;
+}
+class Bar {
+    use Autowire;
+    public function __construct(Foo $foo) {
+        $this->foo = $foo;
+    }
+    public function greet() {
+        return 'Hello!';
+    }
+}
+```

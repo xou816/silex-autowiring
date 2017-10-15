@@ -15,10 +15,11 @@ class ClassHelper {
     /**
      * @see AutowiringService::wire
      * @param array $args
+     * @param bool $factory
      * @return $this
      */
-    public function wire(array $args = []) {
-		$this->auto->wire($this->classname, $args);
+    public function wire(array $args = [], $factory = false) {
+		$this->auto->wire($this->classname, $args, $factory);
 		return $this;
 	}
 
@@ -28,14 +29,6 @@ class ClassHelper {
      */
     public function extend(callable $closure) {
 		$this->auto->extend($this->classname, $closure);
-	}
-
-    /**
-     * @see AutowiringService::factory
-     * @param callable $closure
-     */
-    public function factory(callable $closure) {
-		$this->auto->factory($this->classname, $closure);
 	}
 
     /**
@@ -76,10 +69,11 @@ class ClassHelper {
     /**
      * @see AutowiringService::provide
      * @param callable $closure
+     * @param bool $factory
      * @return string
      */
-    public function provide(callable $closure) {
-		return $this->auto->provide($this->classname, $closure);
+    public function provide(callable $closure, $factory = false) {
+		return $this->auto->provide($this->classname, $closure, $factory);
 	}
 
     /**

@@ -68,6 +68,19 @@ class ServiceWithConfig extends TestService {
 	public $unset;
 }
 
+class CounterService extends TestService {
+    private $counter;
+    public function __construct() {
+        $this->counter = 0;
+    }
+    public function increment() {
+        $this->counter++;
+    }
+    public function get() {
+        return $this->counter;
+    }
+}
+
 class AutowiringServiceTest extends WebTestCase {
 
 	public function setUp() {
@@ -279,5 +292,14 @@ class AutowiringServiceTest extends WebTestCase {
 			->alias('myalias');
 		$this->assertEquals($this->app['myalias']->sayHello(), 'Hello world!');
 	}
+
+	public function testWireAndProvideMethodsCanProduceNewInstance() {
+        $name = $this->auto()->wire(CounterService::class, [], true);
+        $instance1 = $this->app[$name];
+        $instance2 = $this->app[$name];
+        $instance1->increment();
+        $this->assertEquals($instance1->get(), 1);
+        $this->assertEquals($instance2->get(), 0);
+    }
 
 }
