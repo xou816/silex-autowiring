@@ -89,7 +89,7 @@ class AutowiringService {
 			} else {
 				try {
 					$args[] = $this->provider($class->name, $param->getName());
-				} catch (\InvalidArgumentException $e) {
+				} catch (DependencyNotFoundException $e) {
 					$args[] = array_shift($args);
 				}
 			}
@@ -152,6 +152,38 @@ class AutowiringService {
 	}
 
     /**
+     * Create an instance of a given class, passing an array of extra arguments to the constructor when those could not be injected.
+     *
+     * @param string $classname
+     * @param array $args
+     * @return object instance of $classname
+     */
+    public function construct($classname, $args = []) {
+        if (method_exists($classname, '__construct')) {
+            $ref = new \ReflectionMethod($classname, '__construct');
+            $args = $this->mapParameters($this->app, $ref, $args);
+            $class = new \ReflectionClass($classname);
+            return $class->newInstanceArgs($args);
+        } else {
+            return new $classname();
+        }
+    }
+
+    /**
+     * Create a constructor for a given class.
+     * Arguments that could not be injected into the constructor should be passed to the closure.
+     *
+     * @param string $classname
+     * @return \Closure
+     */
+    public function constructor($classname) {
+        return function() use ($classname) {
+            $args = func_get_args();
+            return $this->construct($classname, $args);
+        };
+    }
+
+    /**
      * Creates a new service, which returns an instance of the given class.
      * Dependencies of the service are resolved automatically, as long as they have been exposed in one way or another to the AutowiringService
      * Extra arguments may be passed. They will be used whenever an argument could not be resolved by the AutowiringService.
@@ -162,19 +194,9 @@ class AutowiringService {
      * @return string the name of the service
      */
     public function wire($classname, $args = [], $factory = false) {
-		$name = null;
-		if (method_exists($classname, '__construct')) {
-			$ref = new \ReflectionMethod($classname, '__construct');
-			$name = $this->register($classname, function($app) use ($classname, $ref, $args) {
-				$args = $this->mapParameters($app, $ref, $args);
-				$class = new \ReflectionClass($classname);
-				return $class->newInstanceArgs($args);
-			}, $factory);
-		} else {
-			$name = $this->register($classname, function($app) use ($classname) {
-				return new $classname();
-			}, $factory);
-		}
+		$name = $this->register($classname, function() use ($classname, $args) {
+		    return $this->construct($classname, $args);
+        }, $factory);
 		if ($this->hasTrait($classname, Autoconfigure::class)) {
 			$this->configure($classname);
 		}
@@ -275,9 +297,18 @@ class AutowiringService {
 			$name = $this->wire($classname);
 			return $this->app[$name];
 		} else {
-			throw new \InvalidArgumentException('no provider for "'.$classname.'"');
+			throw new DependencyNotFoundException('no provider for "'.$classname.'"');
 		}
 	}
+
+    /**
+     * Trigger the instanciation of a lazy service.
+     *
+     * @param string $classname
+     */
+    public function wake($classname) {
+        $this->provider($classname);
+    }
 
     /**
      * Register a provider for a class using a callable.

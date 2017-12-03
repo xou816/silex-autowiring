@@ -20,6 +20,40 @@ Methods
 -------
 
 
+### getCompositeKey
+
+    mixed SilexAutowiring\Injectable\AbstractCompositeKeyResolver::getCompositeKey(\Silex\Application $app, $key)
+
+
+
+
+
+* Visibility: **protected**
+
+
+#### Arguments
+* $app **Silex\Application**
+* $key **mixed**
+
+
+
+### compositeKeyExists
+
+    mixed SilexAutowiring\Injectable\AbstractCompositeKeyResolver::compositeKeyExists(\Silex\Application $app, $key)
+
+
+
+
+
+* Visibility: **protected**
+
+
+#### Arguments
+* $app **Silex\Application**
+* $key **mixed**
+
+
+
 ### provides
 
     boolean SilexAutowiring\Injectable\InjectableResolver::provides(\Silex\Application $app, string $key)

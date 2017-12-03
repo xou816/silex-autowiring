@@ -13,6 +13,19 @@ SilexAutowiring\Injectable\Injectable
 
 
 
+Properties
+----------
+
+
+### $object
+
+    private mixed $object
+
+
+
+
+
+* Visibility: **private**
 
 
 Methods

@@ -13,6 +13,30 @@ SilexAutowiring\ClassHelper
 
 
 
+Properties
+----------
+
+
+### $auto
+
+    private mixed $auto
+
+
+
+
+
+* Visibility: **private**
+
+
+### $classname
+
+    private mixed $classname
+
+
+
+
+
+* Visibility: **private**
 
 
 Methods
@@ -117,6 +141,19 @@ Methods
 ### provider
 
     mixed SilexAutowiring\ClassHelper::provider()
+
+
+
+
+
+* Visibility: **public**
+
+
+
+
+### wake
+
+    mixed SilexAutowiring\ClassHelper::wake()
 
 
 

@@ -13,6 +13,41 @@ SilexAutowiring\AutowiringService
 
 
 
+Properties
+----------
+
+
+### $app
+
+    private mixed $app
+
+
+
+
+
+* Visibility: **private**
+
+
+### $status
+
+    private mixed $status = array()
+
+
+
+
+
+* Visibility: **private**
+
+
+### $debug
+
+    private mixed $debug = false
+
+
+
+
+
+* Visibility: **private**
 
 
 Methods
@@ -58,6 +93,157 @@ Get debug info as an array mapping classnames to booleans (true means class serv
 
 * Visibility: **public**
 
+
+
+
+### debugRegistration
+
+    mixed SilexAutowiring\AutowiringService::debugRegistration(string $classname)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $classname **string**
+
+
+
+### register
+
+    string SilexAutowiring\AutowiringService::register(string $classname, callable $closure, boolean $factory)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $classname **string**
+* $closure **callable**
+* $factory **boolean**
+
+
+
+### hasTrait
+
+    boolean SilexAutowiring\AutowiringService::hasTrait(string $classname, string $trait)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $classname **string**
+* $trait **string**
+
+
+
+### mapParameters
+
+    array SilexAutowiring\AutowiringService::mapParameters(\Silex\Application $app, \ReflectionFunctionAbstract $fun, array $args)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $app **Silex\Application**
+* $fun **ReflectionFunctionAbstract**
+* $args **array**
+
+
+
+### isInjectable
+
+    boolean SilexAutowiring\AutowiringService::isInjectable(string $classname)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $classname **string**
+
+
+
+### configureWithRoot
+
+    \Closure SilexAutowiring\AutowiringService::configureWithRoot(string $root, array<mixed,\ReflectionProperty> $props)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $root **string**
+* $props **array&lt;mixed,\ReflectionProperty&gt;**
+
+
+
+### configureNoRoot
+
+    \Closure SilexAutowiring\AutowiringService::configureNoRoot(array<mixed,\ReflectionProperty> $props)
+
+
+
+
+
+* Visibility: **private**
+
+
+#### Arguments
+* $props **array&lt;mixed,\ReflectionProperty&gt;**
+
+
+
+### construct
+
+    object SilexAutowiring\AutowiringService::construct(string $classname, array $args)
+
+Create an instance of a given class, passing an array of extra arguments to the constructor when those could not be injected.
+
+
+
+* Visibility: **public**
+
+
+#### Arguments
+* $classname **string**
+* $args **array**
+
+
+
+### constructor
+
+    \Closure SilexAutowiring\AutowiringService::constructor(string $classname)
+
+Create a constructor for a given class.
+
+Arguments that could not be injected into the constructor should be passed to the closure.
+
+* Visibility: **public**
+
+
+#### Arguments
+* $classname **string**
 
 
 
@@ -182,6 +368,22 @@ Obtain an instance for a given class.
 #### Arguments
 * $classname **string**
 * $paramname **string|null**
+
+
+
+### wake
+
+    mixed SilexAutowiring\AutowiringService::wake(string $classname)
+
+Trigger the instanciation of a lazy service.
+
+
+
+* Visibility: **public**
+
+
+#### Arguments
+* $classname **string**
 
 
 

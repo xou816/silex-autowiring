@@ -5,6 +5,7 @@ API Index
     * [ClassHelper](SilexAutowiring-ClassHelper.md)
     * [AutowiringService](SilexAutowiring-AutowiringService.md)
     * [AutowiringResolver](SilexAutowiring-AutowiringResolver.md)
+    * [DependencyNotFoundException](SilexAutowiring-DependencyNotFoundException.md)
     * [AutowiringServiceProvider](SilexAutowiring-AutowiringServiceProvider.md)
     * SilexAutowiring\Injectable
         * [CasingShiftResolver](SilexAutowiring-Injectable-CasingShiftResolver.md)

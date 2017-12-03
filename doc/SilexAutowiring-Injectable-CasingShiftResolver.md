@@ -20,6 +20,22 @@ Methods
 -------
 
 
+### convert
+
+    mixed SilexAutowiring\Injectable\CasingShiftResolver::convert($key)
+
+
+
+
+
+* Visibility: **protected**
+
+
+#### Arguments
+* $key **mixed**
+
+
+
 ### provides
 
     boolean SilexAutowiring\Injectable\InjectableResolver::provides(\Silex\Application $app, string $key)
@@ -72,5 +88,41 @@ Obtain the value of a key.
 #### Arguments
 * $app **Silex\Application**
 * $key **string**
+
+
+
+### getCompositeKey
+
+    mixed SilexAutowiring\Injectable\AbstractCompositeKeyResolver::getCompositeKey(\Silex\Application $app, $key)
+
+
+
+
+
+* Visibility: **protected**
+* This method is defined by [SilexAutowiring\Injectable\AbstractCompositeKeyResolver](SilexAutowiring-Injectable-AbstractCompositeKeyResolver.md)
+
+
+#### Arguments
+* $app **Silex\Application**
+* $key **mixed**
+
+
+
+### compositeKeyExists
+
+    mixed SilexAutowiring\Injectable\AbstractCompositeKeyResolver::compositeKeyExists(\Silex\Application $app, $key)
+
+
+
+
+
+* Visibility: **protected**
+* This method is defined by [SilexAutowiring\Injectable\AbstractCompositeKeyResolver](SilexAutowiring-Injectable-AbstractCompositeKeyResolver.md)
+
+
+#### Arguments
+* $app **Silex\Application**
+* $key **mixed**
 
 

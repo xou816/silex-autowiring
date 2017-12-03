@@ -13,6 +13,19 @@ SilexAutowiring\AutowiringResolver
 
 
 
+Properties
+----------
+
+
+### $app
+
+    private mixed $app
+
+
+
+
+
+* Visibility: **private**
 
 
 Methods

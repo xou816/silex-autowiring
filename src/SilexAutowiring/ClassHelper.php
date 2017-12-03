@@ -67,6 +67,13 @@ class ClassHelper {
 	}
 
     /**
+     * @see AutowiringService::wake
+     */
+    public function wake() {
+        $this->auto->wake($this->classname);
+    }
+
+    /**
      * @see AutowiringService::provide
      * @param callable $closure
      * @param bool $factory
